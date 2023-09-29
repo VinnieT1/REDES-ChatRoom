@@ -6,12 +6,14 @@ def handle_client(client_socket, clients):
         try:
             data = client_socket.recv(10240)
             message = data.decode('utf-8')
-            print('message received:', message)
+            print('mensagem recebida:', message)
 
             if message[:4] == 'EXIT':
-                clients.remove(client_socket)
                 for client in clients:
                     client.send(message[5:].encode('utf-8'))
+
+                clients.remove(client_socket)
+                client_socket.close()
             elif message[:5] == 'ENTER':
                 for client in clients:
                     client.send(message[6:].encode('utf-8'))
@@ -23,7 +25,7 @@ def handle_client(client_socket, clients):
                 for client in clients:
                     client.send(resp.encode('utf-8'))
         except Exception as e:
-            print('closing thread')
+            print('matando thread e fechando socket')
             try:
                 clients.remove(client_socket)
                 client_socket.close()
@@ -46,17 +48,16 @@ if __name__ == '__main__':
     while True:
         try:
             client_socket, client_address = server_socket.accept()
-            print(f"Accepted connection from {client_address}")
+            print(f"Conexão de {client_address} aceita")
             
             clients.append(client_socket)
             
             client_thread = threading.Thread(target=handle_client, args=(client_socket,clients))
             client_thread.start()
-        except KeyboardInterrupt:
-            print("Server terminated by user.")
-            break
         except Exception as e:
-            print(f"Error: {e}")
+            print(f"Exceção: {e}\nDesligando server")
             break
 
+    for client in clients:
+        client.close()
     server_socket.close()
